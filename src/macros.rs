@@ -186,7 +186,7 @@ macro_rules! clic_codegen {
             ///
             /// # Safety
             ///
-            /// Enabling interrupts mayb break critical sections.
+            /// Enabling interrupts may break critical sections.
             #[inline]
             pub unsafe fn enable() {
                 $crate::clic::CLIC::<CLIC>::enable();
@@ -198,7 +198,21 @@ macro_rules! clic_codegen {
             pub fn disable() {
                 $crate::clic::CLIC::<CLIC>::disable();
             }
-
+            /// Sets the current global interrupt threshold via the mintthresh register.
+            /// When set, any pending interrupt will be filtered against the threshold
+            /// 
+            /// # Safety
+            /// Changing the threshold is side-effectful and may cause an interrupt to be
+            /// inadvertently taken
+            #[inline]
+            pub unsafe fn set_threshold(thresh: usize) {
+                $crate::clic::CLIC::<CLIC>::set_threshold(thresh);
+            }
+            /// Gets the current global interrupt threshold. 
+            #[inline]
+            pub fn get_threshold() -> usize {
+                $crate::clic::CLIC::<CLIC>::get_threshold()
+            }
             /// Returns the interrupt control register block of the CLIC
             #[inline]
             pub fn interrupts() -> $crate::clic::interrupt::INTERRUPTS {

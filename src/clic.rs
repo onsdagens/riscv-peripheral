@@ -58,6 +58,18 @@ impl<C: Clic> CLIC<C> {
     }
 
     #[inline]
+    pub fn set_threshold(thresh:usize) {
+        unsafe{core::arch::asm!("csrrw x0, 0x347 , {0}", in(reg) thresh as isize)};
+    }
+
+    #[inline]
+    pub fn get_threshold() -> usize {
+        let r: usize;
+        unsafe{core::arch::asm!(concat!("csrrs {0}, 0x347 , x0"), out(reg) r)};
+        r
+    } 
+
+    #[inline]
     pub fn interrupts() -> interrupt::INTERRUPTS {
         unsafe{interrupt::INTERRUPTS::new(C::BASE + Self::INTERRUPTS_OFFSET)}
     }
