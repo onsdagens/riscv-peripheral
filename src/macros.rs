@@ -220,14 +220,4 @@ macro_rules! clic_codegen {
             }
         }
     };
-    (ctxs [$($fn:ident = $ctx:expr),+], $($tail:tt)*) => {
-        impl CLIC {
-            $(
-                #[inline]
-                pub fn $fn() -> $crate::clic::CTX<Self> {
-                    Self::ctx($ctx)
-                }
-            )*
-        }
-    };
 }
