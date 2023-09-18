@@ -164,3 +164,56 @@ macro_rules! plic_codegen {
         $crate::plic_codegen!($($tail)*);
     };
 }
+
+#[macro_export]
+macro_rules! clic_codegen {
+    () => {
+        #[allow(unused_imports)]
+        use CLIC as _; // assert that the PLIC struct is defined
+    };
+    (base $addr:literal) => {
+        /// PLIC peripheral
+        #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+        pub struct CLIC;
+
+        unsafe impl $crate::clic::Clic for CLIC {
+            const BASE: usize = $addr;
+        }
+
+        impl CLIC {
+            /// Sets the Machine Mode Interrupt Enable bit of the `mstatus` CSR.
+            /// When set, CLIC interrupts are effectively enabled.
+            ///
+            /// # Safety
+            ///
+            /// Enabling interrupts mayb break critical sections.
+            #[inline]
+            pub unsafe fn enable() {
+                $crate::clic::CLIC::<CLIC>::enable();
+            }
+
+            /// Clears the Machine Mode Interrupt Enable bit of the `mstatus` CSR.
+            /// When cleared, CLIC interrupts are effectively disabled.
+            #[inline]
+            pub fn disable() {
+                $crate::clic::CLIC::<CLIC>::disable();
+            }
+
+            /// Returns the interrupt control register block of the CLIC
+            #[inline]
+            pub fn interrupts() -> $crate::clic::interrupt::INTERRUPTS {
+                $crate::clic::CLIC::<CLIC>::interrupts()
+            }
+        }
+    };
+    (ctxs [$($fn:ident = $ctx:expr),+], $($tail:tt)*) => {
+        impl CLIC {
+            $(
+                #[inline]
+                pub fn $fn() -> $crate::clic::CTX<Self> {
+                    Self::ctx($ctx)
+                }
+            )*
+        }
+    };
+}
