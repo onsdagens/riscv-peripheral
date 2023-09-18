@@ -164,3 +164,60 @@ macro_rules! plic_codegen {
         $crate::plic_codegen!($($tail)*);
     };
 }
+
+#[macro_export]
+macro_rules! clic_codegen {
+    () => {
+        #[allow(unused_imports)]
+        use CLIC as _; // assert that the PLIC struct is defined
+    };
+    (base $addr:literal) => {
+        /// PLIC peripheral
+        #[derive(Clone, Copy, Debug, Eq, PartialEq)]
+        pub struct CLIC;
+
+        unsafe impl $crate::clic::Clic for CLIC {
+            const BASE: usize = $addr;
+        }
+
+        impl CLIC {
+            /// Sets the Machine Mode Interrupt Enable bit of the `mstatus` CSR.
+            /// When set, CLIC interrupts are effectively enabled.
+            ///
+            /// # Safety
+            ///
+            /// Enabling interrupts may break critical sections.
+            #[inline]
+            pub unsafe fn enable() {
+                $crate::clic::CLIC::<CLIC>::enable();
+            }
+
+            /// Clears the Machine Mode Interrupt Enable bit of the `mstatus` CSR.
+            /// When cleared, CLIC interrupts are effectively disabled.
+            #[inline]
+            pub fn disable() {
+                $crate::clic::CLIC::<CLIC>::disable();
+            }
+            /// Sets the current global interrupt threshold via the mintthresh register.
+            /// When set, any pending interrupt will be filtered against the threshold
+            /// 
+            /// # Safety
+            /// Changing the threshold is side-effectful and may cause an interrupt to be
+            /// inadvertently taken
+            #[inline]
+            pub unsafe fn set_threshold(thresh: usize) {
+                $crate::clic::CLIC::<CLIC>::set_threshold(thresh);
+            }
+            /// Gets the current global interrupt threshold. 
+            #[inline]
+            pub fn get_threshold() -> usize {
+                $crate::clic::CLIC::<CLIC>::get_threshold()
+            }
+            /// Returns the interrupt control register block of the CLIC
+            #[inline]
+            pub fn interrupts() -> $crate::clic::interrupt::INTERRUPTS {
+                $crate::clic::CLIC::<CLIC>::interrupts()
+            }
+        }
+    };
+}
