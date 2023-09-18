@@ -164,6 +164,6 @@ pub(crate) mod test {
 
         let interrupts = CLIC::interrupts();
 
-        assert_eq!(interrupts.address(), 0x0000_2000)
+        assert_eq!(interrupts.address(), 0x0000_2000);
     }
 }
