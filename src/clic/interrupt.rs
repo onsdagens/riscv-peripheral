@@ -105,8 +105,12 @@ impl INTERRUPTS {
     }
 
     /// Sets an interrupt as not pending
+    ///
+    /// # Safety
+    ///
+    /// * Unpending interrupts is side-effectful
     #[inline]
-    pub fn unpend<I: InterruptNumber>(self, source: I) {
+    pub unsafe fn unpend<I: InterruptNumber>(self, source: I) {
         let source = source.number() as usize;
         let offset = (source*4) as _;
         // SAFETY: valid interrupt number
@@ -117,11 +121,13 @@ impl INTERRUPTS {
 
 #[cfg(test)]
 mod test{
+    use crate::clic::test::Priority;
+
     use super::super::test::Interrupt;
     use super::*;
 
     #[test]
-    fn test_enables() {
+    fn test_enable() {
         let mut raw_reg = [0u32; 32];
 
         let interrupts = unsafe { INTERRUPTS::new(raw_reg.as_mut_ptr() as _)};
@@ -136,5 +142,42 @@ mod test{
         assert!(!interrupts.is_enabled(Interrupt::I2));
         assert!(interrupts.is_enabled(Interrupt::I3));
         assert!(!interrupts.is_enabled(Interrupt::I4));
+    }
+
+    #[test]
+    fn test_priorities() {
+        let mut raw_reg = [0u32;32];
+        let interrupts = unsafe{INTERRUPTS::new(raw_reg.as_mut_ptr() as _)};
+
+        unsafe{interrupts.set_priority(Interrupt::I1, Priority::P0)};
+        unsafe{interrupts.set_priority(Interrupt::I2, Priority::P1)};
+        unsafe{interrupts.set_priority(Interrupt::I3, Priority::P2)};
+        unsafe{interrupts.set_priority(Interrupt::I4, Priority::P3)};
+
+        assert_eq!(interrupts.get_priority(Interrupt::I1), 0);
+        assert_eq!(interrupts.get_priority(Interrupt::I2), 1);
+        assert_eq!(interrupts.get_priority(Interrupt::I3), 2);
+        assert_eq!(interrupts.get_priority(Interrupt::I4), 3);
+    }
+
+    #[test]
+    fn test_pending() {
+        let mut raw_reg = [0u32; 32];
+
+        let interrupts = unsafe { INTERRUPTS::new(raw_reg.as_mut_ptr() as _)};
+
+        unsafe{interrupts.pend(Interrupt::I1)};
+        unsafe{interrupts.pend(Interrupt::I2)};
+        unsafe{interrupts.pend(Interrupt::I3)};
+        unsafe{interrupts.pend(Interrupt::I4)};
+
+        unsafe{interrupts.unpend(Interrupt::I2)};
+        unsafe{interrupts.unpend(Interrupt::I4)};
+
+        assert!(interrupts.is_pending(Interrupt::I1));
+        assert!(!interrupts.is_pending(Interrupt::I2));
+        assert!(interrupts.is_pending(Interrupt::I3));
+        assert!(!interrupts.is_pending(Interrupt::I4));
+
     }
 }
