@@ -127,25 +127,6 @@ impl<P: Plic> PLIC<P> {
 
     const PENDINGS_OFFSET: usize = 0x1000;
 
-    /// Sets the Machine External Interrupt bit of the `mie` CSR.
-    /// This bit must be set for the PLIC to trigger machine external interrupts.
-    ///
-    /// # Safety
-    ///
-    /// Enabling the `PLIC` may break mask-based critical sections.
-    #[inline]
-    pub unsafe fn enable() {
-        riscv::register::mie::set_mext();
-    }
-
-    /// Clears the Machine External Interrupt bit of the `mie` CSR.
-    /// When cleared, the PLIC does not trigger machine external interrupts.
-    #[inline]
-    pub fn disable() {
-        // SAFETY: it is safe to disable interrupts
-        unsafe { riscv::register::mie::clear_mext() };
-    }
-
     /// Returns the priorities register of the PLIC.
     /// This register allows to set the priority level of each interrupt source.
     /// The priority level of each interrupt source is shared among all the contexts.
@@ -156,16 +137,14 @@ impl<P: Plic> PLIC<P> {
     }
 
     /// Returns the pendings register of the PLIC.
-    /// This register allows to check if an interrupt source is pending.
-    /// This register is shared among all the contexts.
+    /// This register allows to check if a particular interrupt source is pending.
     #[inline]
     pub fn pendings() -> pendings::PENDINGS {
         // SAFETY: valid address
         unsafe { pendings::PENDINGS::new(P::BASE + Self::PENDINGS_OFFSET) }
     }
 
-    /// Returns the context proxy of a given context.
-    /// This proxy provides access to the PLIC registers of the given context.
+    /// Returns a proxy to access to all the PLIC registers of a given context.
     #[inline]
     pub fn ctx<C: ContextNumber>(context: C) -> CTX<P> {
         // SAFETY: valid context number
@@ -371,7 +350,7 @@ pub(crate) mod test {
     fn check_plic() {
         crate::plic_codegen!(
             base 0x0C00_0000,
-            ctxs [ctx0 = Context::C0, ctx1 = Context::C1, ctx2 = Context::C2],
+            ctxs [ctx0 = (Context::C0, "`C0`"), ctx1 = (Context::C1, "`C1`"), ctx2 = (Context::C2, "`C2`")],
         );
 
         let priorities = PLIC::priorities();
@@ -382,38 +361,23 @@ pub(crate) mod test {
 
         for i in 0..=Context::MAX_CONTEXT_NUMBER {
             let context = Context::from_number(i).unwrap();
+            let i = i as usize;
+
             let ctx = PLIC::ctx(context);
 
-            assert_eq!(
-                ctx.enables().address(),
-                0x0C00_0000 + 0x2000 + i as usize * 0x80
-            );
+            assert_eq!(ctx.enables().address(), 0x0C00_0000 + 0x2000 + i * 0x80);
             assert_eq!(
                 ctx.threshold().get_ptr() as usize,
-                0x0C00_0000 + 0x20_0000 + i as usize * 0x1000
+                0x0C00_0000 + 0x20_0000 + i * 0x1000
             );
             assert_eq!(
                 ctx.claim().get_ptr() as usize,
-                0x0C00_0000 + 0x20_0004 + i as usize * 0x1000
+                0x0C00_0000 + 0x20_0004 + i * 0x1000
             );
         }
 
-        let ctx0 = PLIC::ctx0();
-        let ctx_0_ = PLIC::ctx(Context::C0);
-        assert_eq!(ctx0.enables().address(), ctx_0_.enables().address());
-        assert_eq!(ctx0.threshold().get_ptr(), ctx_0_.threshold().get_ptr());
-        assert_eq!(ctx0.claim().get_ptr(), ctx_0_.claim().get_ptr());
-
-        let ctx1 = PLIC::ctx1();
-        let ctx_1_ = PLIC::ctx(Context::C1);
-        assert_eq!(ctx1.enables().address(), ctx_1_.enables().address());
-        assert_eq!(ctx1.threshold().get_ptr(), ctx_1_.threshold().get_ptr());
-        assert_eq!(ctx1.claim().get_ptr(), ctx_1_.claim().get_ptr());
-
-        let ctx2 = PLIC::ctx2();
-        let ctx_2_ = PLIC::ctx(Context::C2);
-        assert_eq!(ctx2.enables().address(), ctx_2_.enables().address());
-        assert_eq!(ctx2.threshold().get_ptr(), ctx_2_.threshold().get_ptr());
-        assert_eq!(ctx2.claim().get_ptr(), ctx_2_.claim().get_ptr());
+        assert_eq!(PLIC::ctx0(), PLIC::ctx(Context::C0));
+        assert_eq!(PLIC::ctx1(), PLIC::ctx(Context::C1));
+        assert_eq!(PLIC::ctx2(), PLIC::ctx(Context::C2));
     }
 }

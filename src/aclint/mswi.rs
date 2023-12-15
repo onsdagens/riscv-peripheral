@@ -1,7 +1,9 @@
+//! Machine-level Software Interrupt Device.
+
 pub use super::HartIdNumber;
 use crate::common::unsafe_peripheral;
 
-/// Machine-level Software Interrupt Device.
+/// MSWI peripheral.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 #[repr(transparent)]
 pub struct MSWI {
@@ -21,25 +23,6 @@ impl MSWI {
         Self {
             msip0: MSIP::new(address),
         }
-    }
-
-    /// Sets the Machine Software Interrupt bit of the `mie` CSR.
-    /// This bit must be set for the `MSWI` to trigger machine software interrupts.
-    ///
-    /// # Safety
-    ///
-    /// Enabling the `MSWI` may break mask-based critical sections.
-    #[inline]
-    pub unsafe fn enable() {
-        riscv::register::mie::set_msoft();
-    }
-
-    /// Clears the Machine Software Interrupt bit of the `mie` CSR.
-    /// When cleared, the `MSWI` cannot trigger machine software interrupts.
-    #[inline]
-    pub fn disable() {
-        // SAFETY: it is safe to disable interrupts
-        unsafe { riscv::register::mie::clear_msoft() };
     }
 
     /// Returns the `MSIP` register for the HART which ID is `hart_id`.
@@ -73,5 +56,32 @@ impl MSIP {
     #[inline]
     pub fn unpend(self) {
         self.register.write(0);
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::super::test::HartId;
+    use super::*;
+
+    #[test]
+    fn test_mswi() {
+        // slice to emulate the interrupt pendings register
+        let raw_reg = [0u32; HartId::MAX_HART_ID_NUMBER as usize + 1];
+        // SAFETY: valid memory address
+        let mswi = unsafe { MSWI::new(raw_reg.as_ptr() as _) };
+
+        for i in 0..=HartId::MAX_HART_ID_NUMBER {
+            let hart_id = HartId::from_number(i).unwrap();
+            let msip = mswi.msip(hart_id);
+            assert!(!msip.is_pending());
+            assert_eq!(raw_reg[i as usize], 0);
+            msip.pend();
+            assert!(msip.is_pending());
+            assert_ne!(raw_reg[i as usize], 0);
+            msip.unpend();
+            assert!(!msip.is_pending());
+            assert_eq!(raw_reg[i as usize], 0);
+        }
     }
 }

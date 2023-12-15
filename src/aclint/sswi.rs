@@ -1,7 +1,9 @@
+//! Supervisor-level Software Interrupt Device.
+
 pub use super::HartIdNumber;
 use crate::common::unsafe_peripheral;
 
-/// Supervisor-level Software Interrupt Device.
+/// SSWI peripheral.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 #[repr(transparent)]
 pub struct SSWI {
@@ -21,6 +23,18 @@ impl SSWI {
         Self {
             setssip0: SETSSIP::new(address),
         }
+    }
+
+    /// Returns `true` if a supervisor software interrupt is pending.
+    #[inline]
+    pub fn is_interrupting() -> bool {
+        riscv::register::sip::read().ssoft()
+    }
+
+    /// Returns `true` if Supervisor Software Interrupts are enabled.
+    #[inline]
+    pub fn is_enabled() -> bool {
+        riscv::register::mie::read().ssoft()
     }
 
     /// Sets the Supervisor Software Interrupt bit of the `mie` CSR.
@@ -73,5 +87,32 @@ impl SETSSIP {
     #[inline]
     pub fn unpend(self) {
         self.register.write(0);
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::super::test::HartId;
+    use super::*;
+
+    #[test]
+    fn test_sswi() {
+        // slice to emulate the interrupt pendings register
+        let raw_reg = [0u32; HartId::MAX_HART_ID_NUMBER as usize + 1];
+        // SAFETY: valid memory address
+        let mswi = unsafe { SSWI::new(raw_reg.as_ptr() as _) };
+
+        for i in 0..=HartId::MAX_HART_ID_NUMBER {
+            let hart_id = HartId::from_number(i).unwrap();
+            let setssip = mswi.setssip(hart_id);
+            assert!(!setssip.is_pending());
+            assert_eq!(raw_reg[i as usize], 0);
+            setssip.pend();
+            assert!(setssip.is_pending());
+            assert_ne!(raw_reg[i as usize], 0);
+            setssip.unpend();
+            assert!(!setssip.is_pending());
+            assert_eq!(raw_reg[i as usize], 0);
+        }
     }
 }

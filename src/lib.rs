@@ -1,11 +1,16 @@
+//! Standard RISC-V peripherals for embedded systems written in Rust
+
+#![deny(missing_docs)]
 #![no_std]
 
-pub use riscv; // re-export riscv crate to allow users to use it without importing it
+pub use riscv; // re-export riscv crate to allow macros to use it
 
-pub mod common;
+pub mod common; // common definitions for all peripherals
+pub mod hal; // trait implementations for embedded-hal
+#[cfg(feature = "hal-async")]
+pub mod hal_async; // async trait implementations for embedded-hal
 pub mod macros; // macros for easing the definition of peripherals in PACs
 
 pub mod aclint;
 pub mod plic;
-
 pub mod clic;

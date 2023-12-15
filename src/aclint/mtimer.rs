@@ -1,7 +1,9 @@
+//! Machine-level Timer Device.
+
 pub use super::HartIdNumber;
 use crate::common::safe_peripheral;
 
-/// Machine-level Timer Device.
+/// MTIMER peripheral.
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct MTIMER {
     /// `MTIMECMP` register for HART ID 0.  In multi-HART architectures,
@@ -16,7 +18,7 @@ impl MTIMER {
     ///
     /// # Safety
     ///
-    /// The base address must point to a valid `MTIMER` peripheral.
+    /// The base addresses must point to valid `MTIMECMP` and `MTIME` peripherals.
     #[inline]
     pub const unsafe fn new(mtimecmp: usize, mtime: usize) -> Self {
         Self {
@@ -25,26 +27,7 @@ impl MTIMER {
         }
     }
 
-    /// Sets the Machine Timer Interrupt bit of the `mie` CSR.
-    /// This bit must be set for the `MTIMER` to trigger machine timer interrupts.
-    ///
-    /// # Safety
-    ///
-    /// Enabling the `MTIMER` may break mask-based critical sections.
-    #[inline]
-    pub unsafe fn enable() {
-        riscv::register::mie::set_mtimer();
-    }
-
-    /// Clears the Machine Timer Interrupt bit of the `mie` CSR.
-    /// When cleared, the `MTIMER` cannot trigger machine timer interrupts.
-    #[inline]
-    pub fn disable() {
-        // SAFETY: it is safe to disable interrupts
-        unsafe { riscv::register::mie::clear_mtimer() };
-    }
-
-    /// Returns the `MTIME` register for the HART which ID is `hart_id`.
+    /// Returns the `MTIMECMP` register for the HART which ID is `hart_id`.
     ///
     /// # Note
     ///
@@ -61,3 +44,36 @@ safe_peripheral!(MTIMECMP, u64, RW);
 
 // MTIME register.
 safe_peripheral!(MTIME, u64, RW);
+
+#[cfg(test)]
+mod test {
+    use super::super::test::HartId;
+    use super::*;
+
+    #[test]
+    fn check_mtimer() {
+        // slice to emulate the mtimecmp registers
+        let raw_mtimecmp = [0u64; HartId::MAX_HART_ID_NUMBER as usize + 1];
+        let raw_mtime = 0u64;
+        // SAFETY: valid memory addresses
+        let mtimer =
+            unsafe { MTIMER::new(raw_mtimecmp.as_ptr() as _, &raw_mtime as *const u64 as _) };
+
+        assert_eq!(
+            mtimer.mtimecmp(HartId::H0).get_ptr() as usize,
+            raw_mtimecmp.as_ptr() as usize
+        );
+        assert_eq!(mtimer.mtimecmp(HartId::H1).get_ptr() as usize, unsafe {
+            raw_mtimecmp.as_ptr().offset(1)
+        }
+            as usize);
+        assert_eq!(mtimer.mtimecmp(HartId::H2).get_ptr() as usize, unsafe {
+            raw_mtimecmp.as_ptr().offset(2)
+        }
+            as usize);
+        assert_eq!(
+            mtimer.mtime.get_ptr() as usize,
+            &raw_mtime as *const u64 as _
+        );
+    }
+}
