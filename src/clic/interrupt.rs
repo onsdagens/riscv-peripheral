@@ -27,9 +27,9 @@ impl INTERRUPTS {
     #[inline]
     pub fn is_enabled<I: InterruptNumber>(self, source: I) -> bool {
         let source = source.number() as usize;
-        let offset = (source * 4 + 1) as _;
+        let offset = (source) as _;
 
-        let reg: Reg<u8, RW> = unsafe { Reg::new(self.ptr.offset(offset) as *mut u8) };
+        let reg: Reg<u8, RW> = unsafe { Reg::new((self.ptr.offset(offset) as u32 + 1) as *mut u8) };
         reg.read() == 1
     }
 
@@ -41,7 +41,7 @@ impl INTERRUPTS {
     #[inline]
     pub unsafe fn enable<I: InterruptNumber>(self, source: I) {
         let source = source.number() as usize;
-        let offset = (source * 4 + 1) as _;
+        let offset = (source) as _;
         // SAFETY: valid interrupt number
         let reg: Reg<u8, RW> = unsafe { Reg::new(self.ptr.offset(offset) as *mut u8) };
         reg.write(1);
@@ -52,7 +52,7 @@ impl INTERRUPTS {
         let source = source.number() as usize;
         let offset = (source * 4 + 1) as _;
         // SAFETY: valid interrupt number
-        let reg: Reg<u8, RW> = unsafe { Reg::new(self.ptr.offset(offset) as *mut u8) };
+         let reg: Reg<u8, RW> = unsafe { Reg::new((self.ptr.offset(offset) as u32 + 1) as *mut u8) };
         reg.write(0);
     }
 
@@ -60,9 +60,9 @@ impl INTERRUPTS {
     #[inline]
     pub fn get_priority<I: InterruptNumber>(self, source: I) -> u8 {
         let source = source.number() as usize;
-        let offset = (source * 4 + 3) as _;
+        let offset = (source) as _;
         // SAFETY: valid interrupt number
-        let reg: Reg<u8, RW> = unsafe { Reg::new(self.ptr.offset(offset) as *mut u8) };
+         let reg: Reg<u8, RW> = unsafe { Reg::new((self.ptr.offset(offset) as u32 + 3) as *mut u8) };
         reg.read()
     }
     /// Sets the priority of an interrupt source
@@ -73,10 +73,10 @@ impl INTERRUPTS {
     #[inline]
     pub unsafe fn set_priority<I: InterruptNumber, P: PriorityNumber>(self, source: I, prio: P) {
         let source = source.number() as usize;
-        let offset = (source * 4 + 3) as _;
+        let offset = (source) as _;
         let prio = prio.number();
         // SAFETY: valid interrupt number
-        let reg: Reg<u8, RW> = unsafe { Reg::new(self.ptr.offset(offset) as *mut u8) };
+         let reg: Reg<u8, RW> = unsafe { Reg::new((self.ptr.offset(offset) as u32 + 3) as *mut u8) };
         reg.write(prio);
     }
 
@@ -84,7 +84,7 @@ impl INTERRUPTS {
     #[inline]
     pub fn is_pending<I: InterruptNumber>(self, source: I) -> bool {
         let source = source.number() as usize;
-        let offset = (source * 4) as _;
+        let offset = (source) as _;
         // SAFETY: valid interrupt number
         let reg: Reg<u8, RW> = unsafe { Reg::new(self.ptr.offset(offset) as *mut u8) };
         reg.read() == 1
@@ -98,7 +98,7 @@ impl INTERRUPTS {
     #[inline]
     pub unsafe fn pend<I: InterruptNumber>(self, source: I) {
         let source = source.number() as usize;
-        let offset = (source * 4) as _;
+        let offset = (source) as _;
         // SAFETY: valid interrupt number
         let reg: Reg<u8, RW> = unsafe { Reg::new(self.ptr.offset(offset) as *mut u8) };
         reg.write(1);
@@ -112,7 +112,7 @@ impl INTERRUPTS {
     #[inline]
     pub unsafe fn unpend<I: InterruptNumber>(self, source: I) {
         let source = source.number() as usize;
-        let offset = (source * 4) as _;
+        let offset = (source) as _;
         // SAFETY: valid interrupt number
         let reg: Reg<u8, RW> = unsafe { Reg::new(self.ptr.offset(offset) as *mut u8) };
         reg.write(0);
