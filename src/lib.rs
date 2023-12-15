@@ -5,7 +5,6 @@
 
 pub use riscv; // re-export riscv crate to allow macros to use it
 
-
 pub mod aclint; // ACLINT and CLINT peripherals
 pub mod clic; // CLIC peripheral
 pub mod common; // common definitions for all peripherals
