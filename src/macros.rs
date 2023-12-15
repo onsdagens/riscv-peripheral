@@ -326,7 +326,7 @@ macro_rules! plic_codegen {
         $crate::plic_codegen!($($tail)*);
     };
 }
-
+/// Macro to generate interface to interrupt configuration registers of the CLIC
 #[macro_export]
 macro_rules! clic_codegen {
     () => {
@@ -362,7 +362,7 @@ macro_rules! clic_codegen {
             }
             /// Sets the current global interrupt threshold via the mintthresh register.
             /// When set, any pending interrupt will be filtered against the threshold
-            /// 
+            ///
             /// # Safety
             /// Changing the threshold is side-effectful and may cause an interrupt to be
             /// inadvertently taken
@@ -370,7 +370,7 @@ macro_rules! clic_codegen {
             pub unsafe fn set_threshold(thresh: usize) {
                 $crate::clic::CLIC::<CLIC>::set_threshold(thresh);
             }
-            /// Gets the current global interrupt threshold. 
+            /// Gets the current global interrupt threshold.
             #[inline]
             pub fn get_threshold() -> usize {
                 $crate::clic::CLIC::<CLIC>::get_threshold()
