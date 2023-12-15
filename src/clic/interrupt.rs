@@ -43,14 +43,14 @@ impl INTERRUPTS {
         let source = source.number() as usize;
         let offset = (source) as _;
         // SAFETY: valid interrupt number
-        let reg: Reg<u8, RW> = unsafe { Reg::new(self.ptr.offset(offset) as *mut u8) };
+        let reg: Reg<u8, RW> = unsafe { Reg::new((self.ptr.offset(offset) as u32 + 1) as *mut u8) };
         reg.write(1);
     }
 
     /// Disables an interrupts source.
     pub fn disable<I: InterruptNumber>(self, source: I) {
         let source = source.number() as usize;
-        let offset = (source * 4 + 1) as _;
+        let offset = (source) as _;
         // SAFETY: valid interrupt number
          let reg: Reg<u8, RW> = unsafe { Reg::new((self.ptr.offset(offset) as u32 + 1) as *mut u8) };
         reg.write(0);
