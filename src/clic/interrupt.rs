@@ -29,7 +29,7 @@ impl INTERRUPTS {
         let source = source.number() as usize;
         let offset = (source) as _;
 
-        let reg: Reg<u8, RW> = unsafe { Reg::new((self.ptr.offset(offset) as u32 + 1) as *mut u8) };
+        let reg: Reg<u8, RW> = unsafe { Reg::new((self.ptr.offset(offset) as usize + 1) as *mut u8) };
         reg.read() == 1
     }
 
@@ -43,7 +43,7 @@ impl INTERRUPTS {
         let source = source.number() as usize;
         let offset = (source) as _;
         // SAFETY: valid interrupt number
-        let reg: Reg<u8, RW> = unsafe { Reg::new((self.ptr.offset(offset) as u32 + 1) as *mut u8) };
+        let reg: Reg<u8, RW> = unsafe { Reg::new((self.ptr.offset(offset) as usize + 1) as *mut u8) };
         reg.write(1);
     }
 
@@ -52,7 +52,7 @@ impl INTERRUPTS {
         let source = source.number() as usize;
         let offset = (source) as _;
         // SAFETY: valid interrupt number
-         let reg: Reg<u8, RW> = unsafe { Reg::new((self.ptr.offset(offset) as u32 + 1) as *mut u8) };
+        let reg: Reg<u8, RW> = unsafe { Reg::new((self.ptr.offset(offset) as usize + 1) as *mut u8) };
         reg.write(0);
     }
 
@@ -62,7 +62,7 @@ impl INTERRUPTS {
         let source = source.number() as usize;
         let offset = (source) as _;
         // SAFETY: valid interrupt number
-         let reg: Reg<u8, RW> = unsafe { Reg::new((self.ptr.offset(offset) as u32 + 3) as *mut u8) };
+        let reg: Reg<u8, RW> = unsafe { Reg::new((self.ptr.offset(offset) as usize + 3) as *mut u8) };
         reg.read()
     }
     /// Sets the priority of an interrupt source
@@ -76,7 +76,7 @@ impl INTERRUPTS {
         let offset = (source) as _;
         let prio = prio.number();
         // SAFETY: valid interrupt number
-         let reg: Reg<u8, RW> = unsafe { Reg::new((self.ptr.offset(offset) as u32 + 3) as *mut u8) };
+        let reg: Reg<u8, RW> = unsafe { Reg::new((self.ptr.offset(offset) as usize + 3) as *mut u8) };
         reg.write(prio);
     }
 
