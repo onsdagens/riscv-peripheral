@@ -2,7 +2,7 @@
 
 use crate::aclint::mtimer::MTIME;
 pub use crate::hal::aclint::Delay;
-pub use crate::hal_async::delay::DelayUs;
+pub use crate::hal_async::delay::DelayNs;
 use core::{
     future::Future,
     pin::Pin,
@@ -34,7 +34,13 @@ impl Future for DelayAsync {
     }
 }
 
-impl DelayUs for Delay {
+impl DelayNs for Delay {
+    #[inline]
+    async fn delay_ns(&mut self, ns: u32) {
+        let n_ticks = ns as u64 * self.get_freq() as u64 / 1_000_000_000;
+        DelayAsync::new(self.get_mtime(), n_ticks).await;
+    }
+
     #[inline]
     async fn delay_us(&mut self, us: u32) {
         let n_ticks = us as u64 * self.get_freq() as u64 / 1_000_000;

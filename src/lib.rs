@@ -13,4 +13,3 @@ pub mod macros; // macros for easing the definition of peripherals in PACs
 pub mod clic; // CLIC peripheral
 pub mod aclint; // ACLINT and CLINT peripherals
 pub mod plic; // PLIC peripheral
-
